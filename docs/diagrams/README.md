@@ -9,15 +9,15 @@ interactive Mermaid, on purpose.
 
 ## Regenerate
 
-Source is HTML/CSS in `src/`. Render with headless Chrome:
+All diagrams are hand-drawn scenes in `src/sketch.html` (rough.js). Render with headless Chrome — the loop below does the three overview diagrams:
 
 ```bash
 CHROME="/c/Program Files/Google/Chrome/Application/chrome.exe"
 BASE="$(pwd)/docs/diagrams"
-"$CHROME" --headless=new --disable-gpu --hide-scrollbars \
-  --force-device-scale-factor=2 --allow-file-access-from-files \
-  --screenshot="$BASE/hero.png" --window-size=1552,842 \
-  "file:///$BASE/src/hero.html"
+render(){ "$CHROME" --headless=new --disable-gpu --hide-scrollbars   --force-device-scale-factor=2 --allow-file-access-from-files   --virtual-time-budget=2500 --screenshot="$BASE/$2"   --window-size=$3 "file:///$BASE/src/sketch.html#$1"; }
+render hero hero.png 1460,860
+render arch architecture.png 1360,620
+render dual dual-llm.png 1120,640
 ```
 
 Adjust `--window-size` height to fit each poster (arch ~700, dual ~640).

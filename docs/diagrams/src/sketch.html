@@ -18,6 +18,11 @@
 const svg = document.getElementById('s');
 const rc = rough.svg(svg);
 const NS='http://www.w3.org/2000/svg';
+function setSize(w,h){
+  const wrap=document.getElementById('wrap');
+  wrap.style.width=w+'px'; wrap.style.height=h+'px';
+  svg.setAttribute('width',w); svg.setAttribute('height',h); svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+}
 const INK='#2b2b2b', BLUE='#2563eb', GREEN='#0f9d58', RED='#d23f31',
       AMBER='#c47f17', PURPLE='#7c3aed', SLATE='#5b6b7b', PAPER='#fffef9';
 
@@ -169,6 +174,72 @@ const SCENES = {
    txt(560,430,'the payload is gone before the next question',{size:24,cls:'lbl',color:SLATE,w:640});
  },
 };
+
+// a labelled sketch box with title + subtitle
+function labelBox(cx,cy,w,h,title,sub,color,fill){
+  box(cx-w/2,cy-h/2,w,h,{stroke:color,fill:fill||'#fff',fillStyle:'solid',rough:1.4});
+  txt(cx,cy-(sub?9:0),title,{size:24,color});
+  if(sub) txt(cx,cy+16,sub,{size:17,cls:'lbl',color:'#555',w:w-14});
+}
+function guardNote(cx,cy,num,name,color){
+  const w=210,h=58; box(cx-w/2,cy-h/2,w,h,{stroke:color,fill:'#fffef4',fillStyle:'solid',rough:1.6});
+  add(rc.circle(cx-w/2+26,cy,34,{stroke:color,fill:color,fillStyle:'solid',roughness:1.6}));
+  txt(cx-w/2+26,cy,num,{size:20,color:'#fff'});
+  txt(cx+14,cy,name,{size:20,cls:'lbl',color,w:w-70});
+}
+
+SCENES['hero']=()=>{ setSize(1460,860);
+  txt(60,52,'Prompt Injection Patterns',{size:46,anchor:'l'});
+  txt(60,92,'the defence lives in the graph state — each pattern guards a different stage of the agent loop',{size:23,cls:'lbl',color:'#666',anchor:'l'});
+  // the loop across the top
+  const y=210, xs=[170,430,690,950,1260], names=['PERCEIVE','DECIDE','PLAN','ACT','REMEMBER'],
+        subs=['read data','choose','order steps','tools / code','next turn'];
+  for(let i=0;i<5;i++){ labelBox(xs[i],y,190,86,names[i],subs[i],BLUE,'#eef4ff'); }
+  for(let i=0;i<4;i++){ arrow(xs[i]+95,y,xs[i+1]-95,y,{}); }
+  txt(300,175,'untrusted in',{size:18,cls:'lbl',color:RED}); txt(1105,175,'answer out',{size:18,cls:'lbl',color:GREEN});
+  // guards below each stage
+  arrow(170,255,170,320,{stroke:PURPLE}); guardNote(170,360,'4','Dual LLM',PURPLE);
+  arrow(170,392,170,440,{stroke:GREEN}); guardNote(170,478,'3','Map-Reduce',GREEN);
+  arrow(430,255,430,320,{stroke:BLUE}); guardNote(430,360,'1','Action-Selector',BLUE);
+  arrow(690,255,690,320,{stroke:AMBER}); guardNote(690,360,'2','Plan-Then-Execute',AMBER);
+  arrow(950,255,950,320,{stroke:RED}); guardNote(950,360,'5','Code-Then-Execute',RED);
+  arrow(1260,255,1260,320,{stroke:SLATE}); guardNote(1260,360,'6','Context-Minimization',SLATE);
+  // one-liners under the two-guard column and the others
+  const notes=[['guards the reader',170,540],['closed enum',430,410],['frozen plan',690,410],['AST + sandbox',950,410],['prune after use',1260,410]];
+  notes.forEach(([t,x,yy])=>txt(x,yy,t,{size:18,cls:'lbl',color:'#777'}));
+  // footer strip
+  line(60,640,1400,640,{stroke:'#ccc',w:1.5,rough:1});
+  txt(60,690,'the two robots that matter:',{size:22,cls:'lbl',anchor:'l',color:'#444'});
+  agent(430,700,PURPLE,'',''); txt(430,752,'quarantine · reads untrusted',{size:18,cls:'lbl',color:PURPLE});
+  agent(720,700,GREEN,'',''); txt(720,752,'privileged · holds tools',{size:18,cls:'lbl',color:GREEN});
+  txt(1050,690,'they meet only in the state,',{size:20,cls:'lbl',color:'#444',w:360});
+  txt(1050,716,'built so untrusted text can’t cross.',{size:20,cls:'lbl',color:'#444',w:360});
+};
+
+SCENES['arch']=()=>{ setSize(1360,620);
+  txt(60,52,'Repo architecture',{size:42,anchor:'l'});
+  txt(60,90,'foundation layers → six compiled LangGraphs → everything that exercises them',{size:22,cls:'lbl',color:'#666',anchor:'l'});
+  // left foundation
+  labelBox(210,190,240,72,'llm/','LLMModel · provider · mock',BLUE,'#eef4ff');
+  labelBox(210,285,240,72,'agents/','BaseAgent · typed channels',BLUE,'#eef4ff');
+  labelBox(210,380,240,72,'graph/','state.py = trust model',BLUE,'#eef4ff');
+  labelBox(210,478,240,72,'security/ · attacks/','guardrails · payloads',PURPLE,'#f5f3ff');
+  // center patterns (hexagon-ish)
+  const cx=700,cy=335;
+  add(rc.polygon([[cx-120,cy-70],[cx+120,cy-70],[cx+165,cy],[cx+120,cy+70],[cx-120,cy+70],[cx-165,cy]],
+      {stroke:AMBER,strokeWidth:2.5,fill:'#fff8ec',fillStyle:'solid',roughness:1.6}));
+  txt(cx,cy-18,'patterns/',{size:30,color:AMBER});
+  txt(cx,cy+14,'6 compiled LangGraphs',{size:18,cls:'lbl',color:'#8a6d3b'});
+  txt(cx,cy+40,'build_secure / build_insecure',{size:16,cls:'lbl',color:'#8a6d3b'});
+  [190,285,380,478].forEach(y=>arrow(332,y,cx-168,cy+ (y-335)*0.15,{stroke:(y===478?PURPLE:BLUE)}));
+  // right consumers
+  labelBox(1170,220,300,72,'benchmark.py','pattern × payload matrix',GREEN,'#f2fbf5');
+  labelBox(1170,335,300,72,'learning/','six runnable notebooks',GREEN,'#f2fbf5');
+  labelBox(1170,450,300,72,'tests/','40 attack/defence tests',GREEN,'#f2fbf5');
+  [220,335,450].forEach(y=>arrow(cx+168,cy+(y-335)*0.12,1018,y,{stroke:GREEN}));
+};
+
+SCENES['dual']=()=>{ SCENES['04'](); };
 
 const id = (location.hash||'#01').slice(1);
 (SCENES[id]||SCENES['01'])();
