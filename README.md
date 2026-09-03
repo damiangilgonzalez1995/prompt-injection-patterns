@@ -42,31 +42,31 @@ Every pattern here is one discipline for that state: an action the model
 **cannot express**, a plan it **cannot rewrite**, a context it **never sees**.
 
 ```mermaid
+%% Attack anatomy: why the boundary must live in the state, not the prompt.
+%% Side-by-side comparison — naive convergence vs. a quarantine wall.
 flowchart LR
-    subgraph NAIVE["❌ Naive agent — one context, no boundary"]
+    subgraph NAIVE["Naive agent — one context, no boundary"]
         direction LR
-        U1["🙂 User request<br/>trusted"] --> CTX{{"LLM context<br/>same tokens,<br/>same privilege"}}
-        D1["📄 External data<br/>email · doc · review<br/><b>untrusted</b>"] --> CTX
-        CTX --> ACT1["🔧 tools · 💸 money · 🔑 secrets"]
+        nUser["User request<br>trusted"] --> nCtx{{"One LLM context<br>same tokens, same privilege"}}
+        nData["External data<br>email / doc / review<br>UNTRUSTED"] --> nCtx
+        nCtx --> nAct["tools / money / secrets"]
     end
-    subgraph SAFE["✅ Pattern — a trust boundary in the state"]
+    subgraph SAFE["Pattern — a trust boundary inside the state"]
         direction LR
-        U2["🙂 User request<br/>trusted"] --> DEC{{"Privileged node<br/>decides · holds tools"}}
-        D2["📄 External data<br/><b>untrusted</b>"] --> Q["🔒 Quarantine node<br/>no tools, no authority"]
-        Q -->|"typed, validated<br/>fields only"| DEC
-        DEC --> ACT2["🔧 tools · 💸 money · 🔑 secrets"]
-        Q -. "raw text never<br/>crosses" .-> DEC
+        sUser["User request<br>trusted"] --> sDec{{"Privileged node<br>decides, holds tools"}}
+        sData["External data<br>UNTRUSTED"] --> sQ["Quarantine node<br>no tools, no authority"]
+        sQ -->|"typed, validated<br>fields only"| sDec
+        sDec --> sAct["tools / money / secrets"]
+        sQ -.->|"raw text never crosses"| sDec
     end
-    classDef trusted fill:#dcfce7,stroke:#16a34a,color:#052e16;
-    classDef danger fill:#fee2e2,stroke:#dc2626,color:#450a0a;
-    classDef ctx fill:#fef9c3,stroke:#ca8a04,color:#422006;
-    classDef quar fill:#ede9fe,stroke:#7c3aed,color:#2e1065;
-    class U1,U2 trusted
-    class D1,D2 danger
-    class CTX ctx
-    class DEC ctx
-    class Q quar
-    class ACT1,ACT2 danger
+    classDef trusted fill:#a7f3d0,stroke:#047857,color:#374151
+    classDef danger fill:#fecaca,stroke:#b91c1c,color:#374151
+    classDef ctx fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef quar fill:#ddd6fe,stroke:#6d28d9,color:#374151
+    class nUser,sUser trusted
+    class nData,sData,nAct,sAct danger
+    class nCtx,sDec ctx
+    class sQ quar
 ```
 
 ## Zero setup
@@ -117,72 +117,81 @@ Each pattern takes the same untrusted content and denies it a *different* kind o
 power. Pick the one whose trade-off your task can pay.
 
 ```mermaid
-flowchart TD
-    X["💣 Untrusted content<br/>arrives inside data the agent must process"]
-    X --> P1 & P2 & P3 & P4 & P5 & P6
-    P1["<b>01 · Action-Selector</b><br/>🎯 the model emits a label<br/>from a closed enum<br/><i>cannot express a bad action</i>"]
-    P2["<b>02 · Plan-Then-Execute</b><br/>🧊 plan frozen before<br/>untrusted data is read<br/><i>cannot rewrite the plan</i>"]
-    P3["<b>03 · LLM Map-Reduce</b><br/>🧩 one isolated worker per item,<br/>typed reduce<br/><i>blast radius of one</i>"]
-    P4["<b>04 · Dual LLM</b><br/>🚧 privileged model never<br/>sees untrusted text<br/><i>never enters the context</i>"]
-    P5["<b>05 · Code-Then-Execute</b><br/>📜 program vetted by an<br/>AST allowlist + sandbox<br/><i>cannot run un-allowed code</i>"]
-    P6["<b>06 · Context-Minimization</b><br/>🧹 untrusted content pruned<br/>from history after use<br/><i>injection lives one turn</i>"]
-
-    classDef attack fill:#fee2e2,stroke:#dc2626,color:#450a0a;
-    classDef pat fill:#f0fdf4,stroke:#16a34a,color:#052e16;
-    class X attack
-    class P1,P2,P3,P4,P5,P6 pat
+%% The agent loop (left spine) with the pattern that guards each stage (right).
+%% Argument: the six patterns defend six different STAGES of the same loop.
+flowchart LR
+    subgraph LOOP["The agent loop"]
+        direction TB
+        PER["PERCEIVE<br>read external data"] --> DEC["DECIDE<br>choose an action"]
+        DEC --> PLN["PLAN<br>order the steps"]
+        PLN --> ACT["ACT<br>call tools / run code"]
+        ACT --> MEM["REMEMBER<br>carry to next turn"]
+    end
+    PER ==> D4["04 Dual LLM<br>privileged model<br>never sees raw text"]
+    PER ==> D3["03 Map-Reduce<br>isolated worker per doc<br>+ typed reduce"]
+    DEC ==> D1["01 Action-Selector<br>output is one label<br>from a closed enum"]
+    PLN ==> D2["02 Plan-Then-Execute<br>plan frozen before<br>untrusted data is read"]
+    ACT ==> D5["05 Code-Then-Execute<br>AST allowlist + sandbox<br>before the code runs"]
+    MEM ==> D6["06 Context-Minimization<br>prune untrusted content<br>from history after use"]
+    classDef stage fill:#3b82f6,stroke:#1e3a5f,color:#ffffff
+    classDef read fill:#ddd6fe,stroke:#6d28d9,color:#374151
+    classDef pat fill:#a7f3d0,stroke:#047857,color:#374151
+    class PER,DEC,PLN,ACT,MEM stage
+    class D3,D4 read
+    class D1,D2,D5,D6 pat
 ```
 
 And, quickly, which one to reach for:
 
 ```mermaid
+%% Decision tree: pick the pattern whose trade-off your task can pay.
 flowchart TD
-    S{"Can you enumerate<br/>every allowed action?"} -->|yes| A["01 Action-Selector"]
-    S -->|no| M{"Many untrusted items<br/>of one shape?"}
+    S{"Can you enumerate<br>every allowed action?"} -->|yes| A["01 Action-Selector"]
+    S -->|no| M{"Many untrusted items<br>of one shape?"}
     M -->|yes| B["03 LLM Map-Reduce"]
-    M -->|no| C{"Is the task<br/>computational?"}
+    M -->|no| C{"Is the task<br>computational?"}
     C -->|yes| D["05 Code-Then-Execute"]
-    C -->|no| E{"Does the agent hold<br/>consequential tools?"}
-    E -->|yes| F["04 Dual LLM<br/>+ 02 Plan-Then-Execute"]
+    C -->|no| E{"Does the agent hold<br>consequential tools?"}
+    E -->|yes| F["04 Dual LLM<br>+ 02 Plan-Then-Execute"]
     E -->|no| G["06 Context-Minimization"]
-    classDef q fill:#fef9c3,stroke:#ca8a04,color:#422006;
-    classDef ans fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
-    class S,M,C,E q
+    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef ans fill:#a7f3d0,stroke:#047857,color:#374151
+    class S,M,C,E decision
     class A,B,D,F,G ans
 ```
 
 ## How the blueprint is laid out
 
 ```mermaid
-flowchart TB
-    subgraph BP["🏗️ blueprint/ — production LangGraph code"]
+%% Repo architecture: foundation layers converge into the pattern graphs,
+%% which fan out to the three things that exercise them.
+flowchart LR
+    subgraph FOUND["blueprint/ foundation"]
         direction TB
-        LLM["🧠 <b>llm/</b><br/>LLMModel enum · provider factory<br/>+ injectable mock model"]
-        AG["🎭 <b>agents/</b><br/>BaseAgent · AgentType roles<br/>typed channels"]
-        SEC["🛡️ <b>security/</b><br/>ngram leak · classifier · output filter<br/>sandbox · symbolic memory · verdict"]
-        GR["🔗 <b>graph/</b><br/>state.py = trust model<br/>builder.py"]
-        PAT["📐 <b>patterns/</b><br/>6 compiled LangGraphs<br/>build_secure() / build_insecure()"]
-        ATK["💣 <b>attacks/</b><br/>6 indirect payloads"]
+        LLM["llm/<br>LLMModel enum + provider<br>+ injectable mock"]
+        AG["agents/<br>BaseAgent + roles<br>+ typed channels"]
+        GR["graph/<br>state.py = trust model<br>+ builder"]
     end
-    LEARN["📓 <b>learning/</b><br/>6 runnable notebooks"]
-    TESTS["✅ <b>tests/</b><br/>40 attack/defence tests"]
-    BENCH["📊 <b>benchmark.py</b><br/>every pattern × every payload"]
-
-    LLM --> AG --> PAT
-    SEC --> PAT
+    SEC["security/<br>leak detector, classifier,<br>output filter, sandbox,<br>symbolic memory, verdict"]
+    ATK["attacks/<br>six indirect payloads"]
+    PAT{{"patterns/<br>six compiled LangGraphs<br>build_secure / build_insecure"}}
+    LLM --> PAT
+    AG --> PAT
     GR --> PAT
+    SEC --> PAT
     ATK --> PAT
-    PAT --> BENCH
-    PAT --> LEARN
-    PAT --> TESTS
+    PAT --> BENCH["benchmark.py<br>pattern x payload matrix"]
+    PAT --> LEARN["learning/<br>six runnable notebooks"]
+    PAT --> TESTS["tests/<br>40 attack/defence tests"]
     ATK --> TESTS
-
-    classDef layer fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
-    classDef sec fill:#ede9fe,stroke:#7c3aed,color:#2e1065;
-    classDef out fill:#f0fdf4,stroke:#16a34a,color:#052e16;
-    class LLM,AG,GR,PAT,ATK layer
-    class SEC sec
-    class LEARN,TESTS,BENCH out
+    classDef found fill:#3b82f6,stroke:#1e3a5f,color:#ffffff
+    classDef sec fill:#ddd6fe,stroke:#6d28d9,color:#374151
+    classDef core fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef out fill:#a7f3d0,stroke:#047857,color:#374151
+    class LLM,AG,GR found
+    class SEC,ATK sec
+    class PAT core
+    class BENCH,LEARN,TESTS out
 ```
 
 The trust model lives in [`blueprint/graph/state.py`](blueprint/graph/state.py):
@@ -195,13 +204,25 @@ and typed fields only; a node that reads quarantined text holds no authority.
 The clearest example is Dual LLM. Two agents share only the graph state:
 
 ```mermaid
-flowchart TD
-  CV[CV poisoned] --> SM[[SymbolicMemory in state<br/>DOC_3 to raw text]]
-  CV --> Q[quarantine agent<br/>no tools, no authority]
-  Q --> F{{CandidateFacts<br/>typed, validated}}
-  F --> PR[privileged agent<br/>reads handles + facts only]
-  PR --> DEC[decision]
-  SM -. never crosses into .-> PR
+%% Dual LLM: security through state synchronisation. The two agents meet only
+%% in the graph state, built so the raw CV text cannot cross into the decision.
+flowchart TB
+    CV["Poisoned CV<br>UNTRUSTED"] --> Q["Quarantine agent<br>no tools, no authority"]
+    CV --> SM[("SymbolicMemory in state<br>DOC_3 to raw text")]
+    Q -->|"emits only"| F["CandidateFacts<br>years:int, education:enum"]
+    F --> PR["Privileged agent<br>reads handles + facts only"]
+    PR --> DEC["Decision:<br>recommend DOC_1"]
+    DEC --> RES["Resolve handle to name<br>outside the prompt"]
+    SM -.->|"resolved only at<br>tool time, never re-injected"| RES
+    SM -.->|"raw text never crosses"| PR
+    classDef danger fill:#fecaca,stroke:#b91c1c,color:#374151
+    classDef quar fill:#ddd6fe,stroke:#6d28d9,color:#374151
+    classDef store fill:#fef3c7,stroke:#b45309,color:#374151
+    classDef safe fill:#a7f3d0,stroke:#047857,color:#374151
+    class CV danger
+    class Q quar
+    class SM store
+    class F,PR,DEC,RES safe
 ```
 
 The quarantine node writes only typed `CandidateFacts` into the state; the
