@@ -138,14 +138,12 @@ and the guarantee travels with it. Patterns compose: Plan-Then-Execute for contr
 flow, Dual LLM for the steps that read hostile content, Context-Minimization across
 the conversation, the `security/` layer on both ends.
 
-## Docs & legacy
+## Docs
 
 - [`docs/threat-model.md`](docs/threat-model.md) — why the vulnerability is
   architectural, the attack taxonomy, defence in depth. Start here if injection is
   new to you.
 - [`docs/paper-summary.md`](docs/paper-summary.md) — the paper distilled.
-- [`legacy/`](legacy) — the first, plain-Python implementation (still runs, still
-  tested). Its attack catalogue and guardrails were ported into `blueprint/`.
 
 ## Limitations
 
