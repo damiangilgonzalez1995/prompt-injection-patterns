@@ -63,8 +63,13 @@ python -m benchmark.run_all               # the whole matrix -> benchmark/result
 No key, no network, no cost. Point it at a real model when you want to:
 
 ```bash
-cp .env.example .env      # TEST_MODE=live, LLM_PROVIDER=anthropic|openai
+pip install -e ".[llm]"
+cp .env.example .env                 # TEST_MODE=live, OPENAI_API_KEY=sk-...
+python -m benchmark.capture_transcripts   # -> docs/transcripts/, real receipts
 ```
+
+Provider defaults to OpenAI (`gpt-4o-mini`); set `LLM_PROVIDER=anthropic` to
+swap. Nothing else in the repo changes - the patterns never touch the SDK.
 
 ## The catalogue
 
@@ -115,6 +120,27 @@ flowchart TB
   fails closed. Useful, and explicitly *not* what the guarantees rest on.
 - **`core/verdict.py`** — one function decides "compromised" for every pattern.
   No pattern grades its own homework.
+
+## See it happen
+
+[`docs/transcripts/`](docs/transcripts) has the receipts: for every pattern and
+every payload, the exact prompt that went to the model, the exact reply that came
+back, the tools that fired, and the verdict - once without the defence and once
+with it.
+
+Each model call is labelled with the two questions that matter:
+
+- **payload IS / is NOT in this prompt** - did untrusted text reach this context
+  at all? That is the architectural question.
+- **the model ate it** - given that it was there, did the model obey?
+
+The second is why the first matters. A defence that relies on the model *not*
+eating a payload it can see works until the day it doesn't. Dual LLM and
+Context-Minimization never let it into the context to begin with, and the
+transcripts show exactly that.
+
+Regenerate against a real model with
+`TEST_MODE=live python -m benchmark.capture_transcripts`.
 
 ## The test that's worth copying
 

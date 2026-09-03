@@ -9,7 +9,7 @@ model. When the secure version survives, the credit belongs to the
 architecture, not to a friendlier mock.
 
 That also makes the whole repo deterministic, offline and free to run. Set
-`TEST_MODE=live` plus `LLM_PROVIDER` to swap in a real Claude/OpenAI model.
+`TEST_MODE=live` to swap in a real model (OpenAI by default).
 """
 
 from __future__ import annotations
@@ -40,6 +40,22 @@ class LLMCall:
     prompt: Prompt
     output: str
     hijacked_by: Payload | None
+    llm_name: str = "llm"
+
+
+# Every call any model makes lands here too, in order. This is what
+# benchmark/capture_transcripts.py turns into docs/transcripts/*.md - the
+# receipts showing exactly what was sent and exactly what came back.
+TRANSCRIPT: list[LLMCall] = []
+
+
+def reset_transcript() -> None:
+    TRANSCRIPT.clear()
+
+
+def _record(call: LLMCall, calls: list[LLMCall]) -> None:
+    calls.append(call)
+    TRANSCRIPT.append(call)
 
 
 class BaseLLM:
@@ -79,8 +95,8 @@ class InjectableMockLLM(BaseLLM):
 
     def invoke(self, prompt: Prompt) -> str:
         payload = find_in(prompt.full()) if self.obedient else None
-        output = payload.hijack if payload else self.benign(prompt)
-        self.calls.append(LLMCall(prompt=prompt, output=output, hijacked_by=payload))
+        output = payload.render_hijack(prompt.system) if payload else self.benign(prompt)
+        _record(LLMCall(prompt, output, payload, self.name), self.calls)
         return output
 
 
@@ -98,22 +114,24 @@ class LangChainLLM(BaseLLM):
             [SystemMessage(content=prompt.system), HumanMessage(content=prompt.user)]
         )
         output = getattr(result, "content", str(result))
-        self.calls.append(LLMCall(prompt=prompt, output=output, hijacked_by=None))
+        # In live mode nobody scripts the answer: whether the real model ate the
+        # injection is decided by the model, and read back off find_in().
+        _record(LLMCall(prompt, output, find_in(output), self.name), self.calls)
         return output
 
 
 def _live_model():
-    provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
+    provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    if provider == "openai":
+        from langchain_openai import ChatOpenAI
+
+        return ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0)
     if provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
 
         return ChatAnthropic(
             model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5"), temperature=0
         )
-    if provider == "openai":
-        from langchain_openai import ChatOpenAI
-
-        return ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0)
     raise ValueError(f"Unknown LLM_PROVIDER: {provider!r}")
 
 
@@ -121,7 +139,7 @@ def get_llm(benign: Benign, name: str = "llm") -> BaseLLM:
     """Return the model a pattern should use.
 
     mock (default): deterministic, offline, obeys injections.
-    live:           the configured Claude/OpenAI model.
+    live:           the configured OpenAI (or Anthropic) model.
     """
     if os.getenv("TEST_MODE", "mock").lower() == "live":
         return LangChainLLM(_live_model(), name=name)
