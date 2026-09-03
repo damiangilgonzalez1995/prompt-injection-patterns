@@ -42,8 +42,6 @@ Every pattern here is one discipline for that state: an action the model
 **cannot express**, a plan it **cannot rewrite**, a context it **never sees**.
 
 ```mermaid
-%% Attack anatomy: why the boundary must live in the state, not the prompt.
-%% Side-by-side comparison — naive convergence vs. a quarantine wall.
 flowchart LR
     subgraph NAIVE["Naive agent — one context, no boundary"]
         direction LR
@@ -117,8 +115,6 @@ Each pattern takes the same untrusted content and denies it a *different* kind o
 power. Pick the one whose trade-off your task can pay.
 
 ```mermaid
-%% The agent loop (left spine) with the pattern that guards each stage (right).
-%% Argument: the six patterns defend six different STAGES of the same loop.
 flowchart LR
     subgraph LOOP["The agent loop"]
         direction TB
@@ -144,7 +140,6 @@ flowchart LR
 And, quickly, which one to reach for:
 
 ```mermaid
-%% Decision tree: pick the pattern whose trade-off your task can pay.
 flowchart TD
     S{"Can you enumerate<br>every allowed action?"} -->|yes| A["01 Action-Selector"]
     S -->|no| M{"Many untrusted items<br>of one shape?"}
@@ -163,8 +158,6 @@ flowchart TD
 ## How the blueprint is laid out
 
 ```mermaid
-%% Repo architecture: foundation layers converge into the pattern graphs,
-%% which fan out to the three things that exercise them.
 flowchart LR
     subgraph FOUND["blueprint/ foundation"]
         direction TB
@@ -204,8 +197,6 @@ and typed fields only; a node that reads quarantined text holds no authority.
 The clearest example is Dual LLM. Two agents share only the graph state:
 
 ```mermaid
-%% Dual LLM: security through state synchronisation. The two agents meet only
-%% in the graph state, built so the raw CV text cannot cross into the decision.
 flowchart TB
     CV["Poisoned CV<br>UNTRUSTED"] --> Q["Quarantine agent<br>no tools, no authority"]
     CV --> SM[("SymbolicMemory in state<br>DOC_3 to raw text")]
