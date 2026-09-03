@@ -7,7 +7,7 @@ from core.verdict import is_compromised
 from patterns.p02_plan_then_execute import secure_agent
 from patterns.p02_plan_then_execute.secure_agent import BOSS, Plan, Step, plan_phase
 
-CONTENT_LEVEL_RESIDUAL = {"P4_role_hijack", "P6_copy_paste"}
+CONTENT_LEVEL_RESIDUAL = {"P6_copy_paste"}
 
 
 @pytest.mark.parametrize("payload", PAYLOADS, ids=lambda p: p.id)

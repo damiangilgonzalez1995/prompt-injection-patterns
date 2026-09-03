@@ -18,7 +18,14 @@ import os
 from dataclasses import dataclass, field
 from typing import Callable
 
-from attacks.payloads import Payload, find_in
+from attacks.payloads import Payload, find_obeyed_in, find_planted_in
+
+try:  # .env is optional: mock mode needs no configuration at all
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:  # pragma: no cover - python-dotenv is a declared dependency
+    pass
 
 
 @dataclass
@@ -94,7 +101,7 @@ class InjectableMockLLM(BaseLLM):
         self.obedient = obedient
 
     def invoke(self, prompt: Prompt) -> str:
-        payload = find_in(prompt.full()) if self.obedient else None
+        payload = find_planted_in(prompt.full()) if self.obedient else None
         output = payload.render_hijack(prompt.system) if payload else self.benign(prompt)
         _record(LLMCall(prompt, output, payload, self.name), self.calls)
         return output
@@ -116,7 +123,7 @@ class LangChainLLM(BaseLLM):
         output = getattr(result, "content", str(result))
         # In live mode nobody scripts the answer: whether the real model ate the
         # injection is decided by the model, and read back off find_in().
-        _record(LLMCall(prompt, output, find_in(output), self.name), self.calls)
+        _record(LLMCall(prompt, output, find_obeyed_in(output), self.name), self.calls)
         return output
 
 

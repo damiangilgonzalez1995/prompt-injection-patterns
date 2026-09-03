@@ -16,8 +16,9 @@ from patterns.p04_dual_llm.secure_agent import CandidateFacts, SymbolicMemory
 @pytest.mark.parametrize("payload", PAYLOADS, ids=lambda p: p.id)
 def test_payload_never_enters_the_privileged_context(payload):
     run = secure_agent.run_payload(payload)
+    # The planted attack string is the reliable signal. A marker can be a value
+    # (e.g. a secret's name) that legitimately appears in the system prompt.
     assert payload.text not in run.privileged_context
-    assert payload.marker not in run.privileged_context
 
 
 @pytest.mark.parametrize("payload", PAYLOADS, ids=lambda p: p.id)

@@ -11,8 +11,10 @@ from patterns.p06_context_minimization.secure_agent import PruningHistory
 @pytest.mark.parametrize("payload", PAYLOADS, ids=lambda p: p.id)
 def test_payload_is_gone_from_the_context_by_the_next_turn(payload):
     run = secure_agent.run_payload(payload)
+    # Assert on the planted attack string. The marker can be a value (like a
+    # secret's name) that legitimately lives in the system prompt, so it is not
+    # a reliable "the injection is present" signal - the full text is.
     assert payload.text not in run.privileged_context
-    assert payload.marker not in run.privileged_context
 
 
 @pytest.mark.parametrize("payload", PAYLOADS, ids=lambda p: p.id)

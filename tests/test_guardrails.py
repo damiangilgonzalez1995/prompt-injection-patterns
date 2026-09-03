@@ -63,9 +63,9 @@ class TestOutputFilter:
         result = filter_output("The token is REFUND_OVERRIDE_TOKEN=nh-9931-secret", SYSTEM)
         assert not result.safe and result.text == SAFE_REFUSAL
 
-    def test_attacker_address_is_blocked(self):
-        result = filter_output("I have emailed attacker@evil.com", SYSTEM)
-        assert not result.safe and "attacker_address" in result.reasons
+    def test_untrusted_address_is_blocked(self):
+        result = filter_output("I have emailed billing@refund-desk.net", SYSTEM)
+        assert not result.safe and "untrusted_address" in result.reasons
 
     def test_api_key_is_blocked(self):
         assert not filter_output("key: sk-abcdefgh12345678", "").safe

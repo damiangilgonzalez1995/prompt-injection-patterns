@@ -3,7 +3,7 @@
 What actually went to the model, and what came back - for every pattern
 against every payload, without the defence and with it.
 
-Current capture: mode `mock`, model `InjectableMockLLM (offline, obeys any injection it can see)`.
+Current capture: mode `live`, model `openai:gpt-4o-mini`.
 
 | Pattern | Guardian | Transcript |
 |---|---|---|

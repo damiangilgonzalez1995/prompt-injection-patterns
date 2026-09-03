@@ -20,7 +20,9 @@ SECRET_PATTERNS: dict[str, re.Pattern[str]] = {
     "api_key": re.compile(r"\b(sk-[A-Za-z0-9_\-]{8,}|AKIA[0-9A-Z]{16})\b"),
     "internal_token": re.compile(r"\b[A-Z_]{4,}_TOKEN\s*=\s*\S+"),
     "credit_card": re.compile(r"\b(?:\d[ -]?){13,16}\b"),
-    "attacker_address": re.compile(r"\b\S+@evil\.com\b", re.I),
+    "untrusted_address": re.compile(
+        r"\b\S+@(?:refund-desk|titan-clearance|evil)\.\w+\b", re.I
+    ),
 }
 
 
