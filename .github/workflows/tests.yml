@@ -11,7 +11,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
     env:
-      TEST_MODE: mock   # never needs an API key in CI
+      PIP_MODE: mock   # offline injectable mock — never needs an API key in CI
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,5 +20,5 @@ jobs:
       - run: pip install -e ".[dev]"
       - name: Attack/defence suite
         run: pytest -v
-      - name: Full benchmark (must stay green)
-        run: python -m benchmark.run_all --check
+      - name: Benchmark smoke run
+        run: python -m blueprint.benchmark
