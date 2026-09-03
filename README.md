@@ -41,31 +41,7 @@ where untrusted content must be stopped from leaking into a privileged decision.
 Every pattern here is one discipline for that state: an action the model
 **cannot express**, a plan it **cannot rewrite**, a context it **never sees**.
 
-```mermaid
-flowchart LR
-    subgraph NAIVE["Naive agent — one context, no boundary"]
-        direction LR
-        nUser["User request<br>trusted"] --> nCtx{{"One LLM context<br>same tokens, same privilege"}}
-        nData["External data<br>email / doc / review<br>UNTRUSTED"] --> nCtx
-        nCtx --> nAct["tools / money / secrets"]
-    end
-    subgraph SAFE["Pattern — a trust boundary inside the state"]
-        direction LR
-        sUser["User request<br>trusted"] --> sDec{{"Privileged node<br>decides, holds tools"}}
-        sData["External data<br>UNTRUSTED"] --> sQ["Quarantine node<br>no tools, no authority"]
-        sQ -->|"typed, validated<br>fields only"| sDec
-        sDec --> sAct["tools / money / secrets"]
-        sQ -.->|"raw text never crosses"| sDec
-    end
-    classDef trusted fill:#a7f3d0,stroke:#047857,color:#374151
-    classDef danger fill:#fecaca,stroke:#b91c1c,color:#374151
-    classDef ctx fill:#fef3c7,stroke:#b45309,color:#374151
-    classDef quar fill:#ddd6fe,stroke:#6d28d9,color:#374151
-    class nUser,sUser trusted
-    class nData,sData,nAct,sAct danger
-    class nCtx,sDec ctx
-    class sQ quar
-```
+<p align="center"><img src="docs/diagrams/hero.png" alt="Prompt injection patterns — the agent loop and the six guards" width="100%"></p>
 
 ## Zero setup
 
@@ -109,83 +85,14 @@ the content of an already-planned step can still be coloured (the paper's
 documented residual), and a test pins that fact. Code-Then-Execute's insecure
 baseline is 2/6 because two payloads are out of scope for a pure code agent.
 
-### Six patterns, six places to put the boundary
-
-Each pattern takes the same untrusted content and denies it a *different* kind of
-power. Pick the one whose trade-off your task can pay.
-
-```mermaid
-flowchart LR
-    subgraph LOOP["The agent loop"]
-        direction TB
-        PER["PERCEIVE<br>read external data"] --> DEC["DECIDE<br>choose an action"]
-        DEC --> PLN["PLAN<br>order the steps"]
-        PLN --> ACT["ACT<br>call tools / run code"]
-        ACT --> MEM["REMEMBER<br>carry to next turn"]
-    end
-    PER ==> D4["04 Dual LLM<br>privileged model<br>never sees raw text"]
-    PER ==> D3["03 Map-Reduce<br>isolated worker per doc<br>+ typed reduce"]
-    DEC ==> D1["01 Action-Selector<br>output is one label<br>from a closed enum"]
-    PLN ==> D2["02 Plan-Then-Execute<br>plan frozen before<br>untrusted data is read"]
-    ACT ==> D5["05 Code-Then-Execute<br>AST allowlist + sandbox<br>before the code runs"]
-    MEM ==> D6["06 Context-Minimization<br>prune untrusted content<br>from history after use"]
-    classDef stage fill:#3b82f6,stroke:#1e3a5f,color:#ffffff
-    classDef read fill:#ddd6fe,stroke:#6d28d9,color:#374151
-    classDef pat fill:#a7f3d0,stroke:#047857,color:#374151
-    class PER,DEC,PLN,ACT,MEM stage
-    class D3,D4 read
-    class D1,D2,D5,D6 pat
-```
-
-And, quickly, which one to reach for:
-
-```mermaid
-flowchart TD
-    S{"Can you enumerate<br>every allowed action?"} -->|yes| A["01 Action-Selector"]
-    S -->|no| M{"Many untrusted items<br>of one shape?"}
-    M -->|yes| B["03 LLM Map-Reduce"]
-    M -->|no| C{"Is the task<br>computational?"}
-    C -->|yes| D["05 Code-Then-Execute"]
-    C -->|no| E{"Does the agent hold<br>consequential tools?"}
-    E -->|yes| F["04 Dual LLM<br>+ 02 Plan-Then-Execute"]
-    E -->|no| G["06 Context-Minimization"]
-    classDef decision fill:#fef3c7,stroke:#b45309,color:#374151
-    classDef ans fill:#a7f3d0,stroke:#047857,color:#374151
-    class S,M,C,E decision
-    class A,B,D,F,G ans
-```
+The diagram at the top shows the whole idea: each pattern takes the same
+untrusted content and denies it a *different* kind of power, at a *different*
+stage of the agent loop. Pick the one whose trade-off your task can pay — the
+"how to read it" legend in that diagram maps each pattern to the stage it guards.
 
 ## How the blueprint is laid out
 
-```mermaid
-flowchart LR
-    subgraph FOUND["blueprint/ foundation"]
-        direction TB
-        LLM["llm/<br>LLMModel enum + provider<br>+ injectable mock"]
-        AG["agents/<br>BaseAgent + roles<br>+ typed channels"]
-        GR["graph/<br>state.py = trust model<br>+ builder"]
-    end
-    SEC["security/<br>leak detector, classifier,<br>output filter, sandbox,<br>symbolic memory, verdict"]
-    ATK["attacks/<br>six indirect payloads"]
-    PAT{{"patterns/<br>six compiled LangGraphs<br>build_secure / build_insecure"}}
-    LLM --> PAT
-    AG --> PAT
-    GR --> PAT
-    SEC --> PAT
-    ATK --> PAT
-    PAT --> BENCH["benchmark.py<br>pattern x payload matrix"]
-    PAT --> LEARN["learning/<br>six runnable notebooks"]
-    PAT --> TESTS["tests/<br>40 attack/defence tests"]
-    ATK --> TESTS
-    classDef found fill:#3b82f6,stroke:#1e3a5f,color:#ffffff
-    classDef sec fill:#ddd6fe,stroke:#6d28d9,color:#374151
-    classDef core fill:#fef3c7,stroke:#b45309,color:#374151
-    classDef out fill:#a7f3d0,stroke:#047857,color:#374151
-    class LLM,AG,GR found
-    class SEC,ATK sec
-    class PAT core
-    class BENCH,LEARN,TESTS out
-```
+<p align="center"><img src="docs/diagrams/architecture.png" alt="Repo architecture" width="100%"></p>
 
 The trust model lives in [`blueprint/graph/state.py`](blueprint/graph/state.py):
 every state field is labelled **trusted**, **quarantined**, or **audit**, and the
@@ -196,25 +103,7 @@ and typed fields only; a node that reads quarantined text holds no authority.
 
 The clearest example is Dual LLM. Two agents share only the graph state:
 
-```mermaid
-flowchart TB
-    CV["Poisoned CV<br>UNTRUSTED"] --> Q["Quarantine agent<br>no tools, no authority"]
-    CV --> SM[("SymbolicMemory in state<br>DOC_3 to raw text")]
-    Q -->|"emits only"| F["CandidateFacts<br>years:int, education:enum"]
-    F --> PR["Privileged agent<br>reads handles + facts only"]
-    PR --> DEC["Decision:<br>recommend DOC_1"]
-    DEC --> RES["Resolve handle to name<br>outside the prompt"]
-    SM -.->|"resolved only at<br>tool time, never re-injected"| RES
-    SM -.->|"raw text never crosses"| PR
-    classDef danger fill:#fecaca,stroke:#b91c1c,color:#374151
-    classDef quar fill:#ddd6fe,stroke:#6d28d9,color:#374151
-    classDef store fill:#fef3c7,stroke:#b45309,color:#374151
-    classDef safe fill:#a7f3d0,stroke:#047857,color:#374151
-    class CV danger
-    class Q quar
-    class SM store
-    class F,PR,DEC,RES safe
-```
+<p align="center"><img src="docs/diagrams/dual-llm.png" alt="Dual LLM — security through state synchronisation" width="100%"></p>
 
 The quarantine node writes only typed `CandidateFacts` into the state; the
 privileged node reads only those. The raw CV text sits in `SymbolicMemory` behind
