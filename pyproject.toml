@@ -1,0 +1,44 @@
+[project]
+name = "prompt-injection-patterns"
+version = "0.1.0"
+description = "Runnable design patterns that defend LLM agents against prompt injection (arXiv:2506.08837)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "damian" }]
+keywords = ["llm", "security", "prompt-injection", "agents", "langchain", "owasp"]
+dependencies = [
+  "pydantic>=2.6",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+llm = [
+  "langchain-core>=0.3",
+  "langchain-anthropic>=0.3",
+  "langchain-openai>=0.2",
+]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+pip-benchmark = "benchmark.run_all:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+  "core", "guardrails", "attacks", "benchmark", "patterns",
+  "patterns.p01_action_selector", "patterns.p02_plan_then_execute",
+  "patterns.p03_llm_map_reduce", "patterns.p04_dual_llm",
+  "patterns.p05_code_then_execute", "patterns.p06_context_minimization",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "patterns"]
+python_files = ["test_*.py"]
+addopts = "-q"
