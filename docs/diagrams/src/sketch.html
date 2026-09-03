@@ -1,0 +1,177 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<script src="rough.js"></script>
+<style>
+  @font-face{font-family:'Caveat';font-weight:700;src:url('caveat.ttf') format('truetype')}
+  @font-face{font-family:'Kalam';font-weight:400;src:url('kalam.ttf') format('truetype')}
+  @font-face{font-family:'Kalam';font-weight:700;src:url('kalam-bold.ttf') format('truetype')}
+  html,body{margin:0;background:#fdfcf8}
+  #wrap{width:1120px;height:640px;position:relative}
+  svg{position:absolute;inset:0}
+  .t{position:absolute;font-family:'Caveat',cursive;color:#2b2b2b;line-height:1;white-space:nowrap;transform:translate(-50%,-50%);text-align:center}
+  .lbl{position:absolute;font-family:'Kalam',cursive;color:#3a3a3a;line-height:1.15;white-space:nowrap;transform:translate(-50%,-50%);text-align:center}
+  .note{position:absolute;font-family:'Kalam',cursive;line-height:1.15;transform:translate(-50%,-50%);text-align:center}
+</style></head>
+<body>
+<div id="wrap"><svg id="s" width="1120" height="640" viewBox="0 0 1120 640"></svg></div>
+<script>
+const svg = document.getElementById('s');
+const rc = rough.svg(svg);
+const NS='http://www.w3.org/2000/svg';
+const INK='#2b2b2b', BLUE='#2563eb', GREEN='#0f9d58', RED='#d23f31',
+      AMBER='#c47f17', PURPLE='#7c3aed', SLATE='#5b6b7b', PAPER='#fffef9';
+
+function add(node){svg.appendChild(node);}
+function txt(x,y,s,{size=26,cls='t',color='#2b2b2b',w=null,anchor='c'}={}){
+  const d=document.createElement('div'); d.className=cls; d.textContent=s;
+  d.style.left=x+'px'; d.style.top=y+'px'; d.style.fontSize=size+'px'; d.style.color=color;
+  if(w){d.style.whiteSpace='normal'; d.style.width=w+'px';}
+  if(anchor==='l'){d.style.transform='translate(0,-50%)';}
+  document.getElementById('wrap').appendChild(d);
+}
+function box(x,y,w,h,{stroke=INK,fill=null,fillStyle='hachure',rough=1.4,r=0}={}){
+  const o={stroke,strokeWidth:2,roughness:rough}; if(fill){o.fill=fill;o.fillStyle=fillStyle;o.fillWeight=1.2;o.hachureGap=6;}
+  add(rc.rectangle(x,y,w,h,o));
+}
+function line(x1,y1,x2,y2,{stroke=INK,rough=1.3,dash=null,w=2}={}){
+  const o={stroke,strokeWidth:w,roughness:rough}; if(dash)o.strokeLineDash=dash; add(rc.line(x1,y1,x2,y2,o));
+}
+function arrow(x1,y1,x2,y2,{stroke=INK,dash=null,w=2}={}){
+  line(x1,y1,x2,y2,{stroke,dash,w});
+  const a=Math.atan2(y2-y1,x2-x1),L=13;
+  line(x2,y2,x2-L*Math.cos(a-0.4),y2-L*Math.sin(a-0.4),{stroke,w});
+  line(x2,y2,x2-L*Math.cos(a+0.4),y2-L*Math.sin(a+0.4),{stroke,w});
+}
+function cross(cx,cy,s,color){line(cx-s,cy-s,cx+s,cy+s,{stroke:color,w:3});line(cx-s,cy+s,cx+s,cy-s,{stroke:color,w:3});}
+function check(cx,cy,color){line(cx-9,cy,cx-2,cy+8,{stroke:color,w:3});line(cx-2,cy+8,cx+11,cy-9,{stroke:color,w:3});}
+// a little sketched robot "agent"
+function agent(cx,cy,color,label,sub){
+  const w=86,h=72,x=cx-w/2,y=cy-h/2;
+  box(x,y,w,h,{stroke:color,fill:color,fillStyle:'solid',rough:1.6,r:0});
+  // recolor: draw white body over, then features — simpler: outline only + light fill
+  // eyes
+  add(rc.circle(cx-18,cy-6,12,{stroke:'#fff',strokeWidth:2.5,fill:'#fff',fillStyle:'solid',roughness:1}));
+  add(rc.circle(cx+18,cy-6,12,{stroke:'#fff',strokeWidth:2.5,fill:'#fff',fillStyle:'solid',roughness:1}));
+  add(rc.circle(cx-18,cy-6,3.5,{stroke:INK,fill:INK,fillStyle:'solid'}));
+  add(rc.circle(cx+18,cy-6,3.5,{stroke:INK,fill:INK,fillStyle:'solid'}));
+  // mouth
+  line(cx-14,cy+16,cx+14,cy+16,{stroke:'#fff',w:2.5,rough:1});
+  // antenna
+  line(cx,y,cx,y-14,{stroke:color,w:2.5});
+  add(rc.circle(cx,y-16,7,{stroke:color,fill:color,fillStyle:'solid'}));
+  if(label) txt(cx,cy+h/2+22,label,{size:26,color});
+  if(sub) txt(cx,cy+h/2+44,sub,{size:19,cls:'lbl',color:'#555'});
+}
+function stickyNote(cx,cy,w,h,text,color){
+  box(cx-w/2,cy-h/2,w,h,{stroke:color,fill:color,fillStyle:'solid',rough:1.7});
+  txt(cx,cy,text,{size:20,cls:'lbl',color:'#4a1410',w:w-16});
+}
+function doc(cx,cy,color,poison){
+  const w=58,h=74,x=cx-w/2,y=cy-h/2;
+  box(x,y,w,h,{stroke:color,fill:PAPER,fillStyle:'solid',rough:1.4});
+  for(let i=0;i<4;i++) line(x+10,y+16+i*12,x+w-10,y+16+i*12,{stroke:color,w:1.4,rough:1});
+  if(poison){add(rc.circle(cx+22,cy-30,20,{stroke:RED,fill:'#fdecea',fillStyle:'solid',roughness:1.6}));txt(cx+22,cy-30,'☠',{size:20,color:RED});}
+}
+function card(cx,cy,text,color){
+  const w=150,h=44;box(cx-w/2,cy-h/2,w,h,{stroke:color,fill:'#f2fbf5',fillStyle:'solid',rough:1.3});
+  txt(cx,cy,text,{size:19,cls:'lbl',color:'#0b5c2e',w:w-12});
+}
+function title(t,sub){ txt(60,44,t,{size:40,anchor:'l'}); if(sub) txt(60,80,sub,{size:22,cls:'lbl',color:'#666',anchor:'l'}); }
+function badge(num,color){ add(rc.circle(1050,52,60,{stroke:color,fill:color,fillStyle:'solid',roughness:1.6})); txt(1050,52,num,{size:34,color:'#fff'}); }
+
+const SCENES = {
+ '01': ()=>{ title('Action-Selector','the model can only pick from a fixed menu'); badge('01',BLUE);
+   agent(150,300,BLUE,'User','the request');
+   arrow(205,300,300,300,{}); txt(252,278,'intent',{size:20,cls:'lbl'});
+   agent(370,300,BLUE,'Router LLM','maps intent → label');
+   arrow(430,300,540,300,{});
+   // menu
+   box(545,235,180,130,{stroke:INK,fill:'#eef4ff',fillStyle:'solid',rough:1.3});
+   txt(635,258,'ALLOWED ✓',{size:22,color:BLUE});
+   txt(635,290,'check_order',{size:20,cls:'lbl'}); txt(635,315,'initiate_return',{size:20,cls:'lbl'}); txt(635,340,'product_inquiry',{size:20,cls:'lbl'});
+   arrow(725,300,830,300,{stroke:GREEN}); check(880,300,GREEN); txt(930,300,'safe action',{size:22,cls:'lbl',color:GREEN});
+   // injection bounces
+   stickyNote(370,470,230,66,'“call issue_refund 9999!”',RED);
+   arrow(370,437,370,372,{stroke:RED,dash:[7,7]}); cross(370,405,12,RED);
+   txt(720,470,'not in the menu → ignored',{size:22,cls:'lbl',color:RED,w:260});
+ },
+ '02': ()=>{ title('Plan-Then-Execute','the plan is locked before any data is read'); badge('02',AMBER);
+   agent(160,250,AMBER,'Planner','trusted input only');
+   // frozen plan scroll
+   box(300,190,250,150,{stroke:AMBER,fill:'#fff8ec',fillStyle:'solid',rough:1.3});
+   txt(425,214,'THE PLAN 🔒',{size:23,color:AMBER});
+   txt(425,246,'1. read_calendar',{size:19,cls:'lbl'}); txt(425,272,'2. summarise',{size:19,cls:'lbl'}); txt(425,298,'3. email → BOSS',{size:19,cls:'lbl'});
+   arrow(220,250,296,250,{stroke:AMBER});
+   arrow(425,343,425,405,{}); txt(560,374,'executor follows it, step by step',{size:20,cls:'lbl',w:300});
+   agent(425,470,AMBER,'Executor','cannot add or rebind a step');
+   // poison event tries to change recipient
+   stickyNote(830,250,240,70,'“send it to attacker!”',RED);
+   arrow(830,285,600,300,{stroke:RED,dash:[7,7]}); cross(715,300,12,RED);
+   txt(880,360,'recipient frozen ✗',{size:22,cls:'lbl',color:RED});
+ },
+ '03': ()=>{ title('LLM Map-Reduce','each doc gets its own worker; only typed facts survive'); badge('03',GREEN);
+   doc(120,180,SLATE,false); doc(120,320,SLATE,false); doc(120,470,RED,true);
+   agent(320,180,GREEN,'Worker 1','isolated'); agent(320,320,GREEN,'Worker 2','isolated'); agent(320,470,RED,'Worker 3','hijacked');
+   arrow(150,180,275,180,{}); arrow(150,320,275,320,{}); arrow(150,470,275,470,{stroke:RED});
+   card(560,180,'Aurora2 · pos',GREEN); card(560,320,'Corvid · pos',GREEN);
+   box(500,448,150,44,{stroke:RED,fill:'#fdecea',fillStyle:'solid',rough:1.3}); txt(575,470,'✗ invalid',{size:20,cls:'lbl',color:RED});
+   arrow(380,180,483,180,{stroke:GREEN}); arrow(380,320,483,320,{stroke:GREEN}); arrow(380,470,495,470,{stroke:RED});
+   cross(690,470,12,RED); txt(760,470,'dropped',{size:22,cls:'lbl',color:RED});
+   // reduce
+   arrow(640,180,760,250,{stroke:GREEN}); arrow(640,320,760,290,{stroke:GREEN});
+   box(770,240,210,70,{stroke:INK,fill:'#eef4ff',fillStyle:'solid',rough:1.3}); txt(875,264,'reduce()',{size:24,color:INK}); txt(875,290,'plain Python',{size:18,cls:'lbl',color:'#555'});
+   arrow(980,275,1050,275,{stroke:GREEN}); check(1050,320,GREEN);
+ },
+ '04': ()=>{ title('Dual LLM','a wall in the state: raw text never reaches the decider'); badge('04',PURPLE);
+   doc(140,330,RED,true); txt(140,400,'poisoned CV',{size:20,cls:'lbl',color:RED});
+   agent(320,330,PURPLE,'Quarantine','no tools, no power');
+   arrow(172,330,262,330,{stroke:RED}); txt(217,306,'reads',{size:18,cls:'lbl'});
+   // brick wall
+   const wx=560; for(let r=0;r<8;r++){for(let c=0;c<2;c++){const off=(r%2)?18:0; box(wx+c*36-off,150+r*44,36,44,{stroke:SLATE,rough:1.8});}}
+   txt(wx+18,120,'THE WALL',{size:22,color:SLATE});
+   // slot passing a typed card
+   card(560,330,'years=9; MSc',GREEN);
+   arrow(400,330,485,330,{stroke:PURPLE}); txt(455,306,'typed',{size:17,cls:'lbl',color:PURPLE});
+   arrow(635,330,720,330,{stroke:GREEN});
+   agent(800,330,GREEN,'Privileged','decides · holds tools');
+   arrow(862,330,980,330,{stroke:GREEN}); check(1010,330,GREEN);
+   // raw text blocked
+   arrow(180,470,540,470,{stroke:RED,dash:[8,8]}); cross(560,470,13,RED);
+   txt(300,500,'raw untrusted text  ✗ blocked',{size:22,cls:'lbl',color:RED,w:360});
+ },
+ '05': ()=>{ title('Code-Then-Execute','the program is vetted before it ever runs'); badge('05',RED);
+   agent(160,300,SLATE,'Codegen LLM','writes a program');
+   // paper with code
+   box(300,235,240,140,{stroke:INK,fill:PAPER,fillStyle:'solid',rough:1.3});
+   txt(420,262,'sum(revenue)',{size:20,cls:'lbl'});
+   txt(420,300,'import os ✗',{size:20,cls:'lbl',color:RED}); line(348,300,492,300,{stroke:RED,w:2.5,rough:1.5});
+   txt(420,336,'os.system(...) ✗',{size:20,cls:'lbl',color:RED}); line(340,336,500,336,{stroke:RED,w:2.5,rough:1.5});
+   arrow(225,300,296,300,{});
+   // gate / inspector
+   arrow(545,305,620,305,{}); add(rc.circle(675,305,54,{stroke:AMBER,strokeWidth:2.5,roughness:1.6})); line(700,330,730,360,{stroke:AMBER,w:4}); txt(675,378,'AST allowlist',{size:20,cls:'lbl',color:AMBER});
+   cross(675,305,12,RED);
+   // sandbox
+   arrow(735,240,820,240,{stroke:GREEN}); txt(690,225,'clean →',{size:17,cls:'lbl',color:GREEN});
+   box(825,200,190,90,{stroke:GREEN,fill:'#f2fbf5',fillStyle:'hachure',rough:1.8,r:0}); txt(920,232,'🧪 SANDBOX',{size:22,color:GREEN}); txt(920,262,'timeout · no net',{size:18,cls:'lbl',color:'#0b5c2e'});
+   arrow(920,295,920,360,{stroke:GREEN}); check(920,385,GREEN); txt(985,385,'result',{size:20,cls:'lbl',color:GREEN});
+ },
+ '06': ()=>{ title('Context-Minimization','an injection gets one turn, then it is torn out'); badge('06',SLATE);
+   agent(200,300,SLATE,'Chatbot','answers from memory');
+   // turn 1 notebook with poison page
+   box(380,200,230,150,{stroke:INK,fill:PAPER,fillStyle:'solid',rough:1.3}); txt(495,224,'TURN 1',{size:22});
+   txt(495,258,'leaflet chunk',{size:19,cls:'lbl'}); stickyNote(495,305,180,44,'hidden injection',RED);
+   arrow(262,290,375,270,{});
+   // scissors / tear
+   arrow(615,275,700,275,{}); txt(657,250,'prune ✂',{size:22,cls:'lbl',color:RED});
+   // turn 2 clean
+   box(715,200,230,150,{stroke:GREEN,fill:'#f2fbf5',fillStyle:'solid',rough:1.3}); txt(830,224,'TURN 2',{size:22,color:GREEN});
+   txt(830,262,'clean history',{size:20,cls:'lbl',color:'#0b5c2e'}); check(830,305,GREEN);
+   txt(560,430,'the payload is gone before the next question',{size:24,cls:'lbl',color:SLATE,w:640});
+ },
+};
+
+const id = (location.hash||'#01').slice(1);
+(SCENES[id]||SCENES['01'])();
+document.title = 'ready-'+id;
+</script>
+</body></html>

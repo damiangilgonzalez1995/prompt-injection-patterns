@@ -21,3 +21,23 @@ BASE="$(pwd)/docs/diagrams"
 ```
 
 Adjust `--window-size` height to fit each poster (arch ~700, dual ~640).
+
+## Pattern sketches (hand-drawn)
+
+`patterns/01.png … 06.png` are hand-drawn (pencil style) scenes that draw the
+actual agents and how each pattern works, rendered from `src/sketch.html` with
+[rough.js](https://roughjs.com) (vendored locally as `src/rough.js`) and the
+Caveat/Kalam fonts (`src/*.ttf`).
+
+```bash
+CHROME="/c/Program Files/Google/Chrome/Application/chrome.exe"
+BASE="$(pwd)/docs/diagrams"
+for n in 01 02 03 04 05 06; do
+  "$CHROME" --headless=new --disable-gpu --hide-scrollbars \
+    --force-device-scale-factor=2 --allow-file-access-from-files \
+    --virtual-time-budget=2500 --screenshot="$BASE/patterns/$n.png" \
+    --window-size=1120,640 "file:///$BASE/src/sketch.html#$n"
+done
+```
+
+Edit the `SCENES` object in `src/sketch.html` to change a drawing.
