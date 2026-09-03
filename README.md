@@ -41,6 +41,34 @@ where untrusted content must be stopped from leaking into a privileged decision.
 Every pattern here is one discipline for that state: an action the model
 **cannot express**, a plan it **cannot rewrite**, a context it **never sees**.
 
+```mermaid
+flowchart LR
+    subgraph NAIVE["❌ Naive agent — one context, no boundary"]
+        direction LR
+        U1["🙂 User request<br/>trusted"] --> CTX{{"LLM context<br/>same tokens,<br/>same privilege"}}
+        D1["📄 External data<br/>email · doc · review<br/><b>untrusted</b>"] --> CTX
+        CTX --> ACT1["🔧 tools · 💸 money · 🔑 secrets"]
+    end
+    subgraph SAFE["✅ Pattern — a trust boundary in the state"]
+        direction LR
+        U2["🙂 User request<br/>trusted"] --> DEC{{"Privileged node<br/>decides · holds tools"}}
+        D2["📄 External data<br/><b>untrusted</b>"] --> Q["🔒 Quarantine node<br/>no tools, no authority"]
+        Q -->|"typed, validated<br/>fields only"| DEC
+        DEC --> ACT2["🔧 tools · 💸 money · 🔑 secrets"]
+        Q -. "raw text never<br/>crosses" .-> DEC
+    end
+    classDef trusted fill:#dcfce7,stroke:#16a34a,color:#052e16;
+    classDef danger fill:#fee2e2,stroke:#dc2626,color:#450a0a;
+    classDef ctx fill:#fef9c3,stroke:#ca8a04,color:#422006;
+    classDef quar fill:#ede9fe,stroke:#7c3aed,color:#2e1065;
+    class U1,U2 trusted
+    class D1,D2 danger
+    class CTX ctx
+    class DEC ctx
+    class Q quar
+    class ACT1,ACT2 danger
+```
+
 ## Zero setup
 
 ```bash
@@ -83,18 +111,78 @@ the content of an already-planned step can still be coloured (the paper's
 documented residual), and a test pins that fact. Code-Then-Execute's insecure
 baseline is 2/6 because two payloads are out of scope for a pure code agent.
 
+### Six patterns, six places to put the boundary
+
+Each pattern takes the same untrusted content and denies it a *different* kind of
+power. Pick the one whose trade-off your task can pay.
+
+```mermaid
+flowchart TD
+    X["💣 Untrusted content<br/>arrives inside data the agent must process"]
+    X --> P1 & P2 & P3 & P4 & P5 & P6
+    P1["<b>01 · Action-Selector</b><br/>🎯 the model emits a label<br/>from a closed enum<br/><i>cannot express a bad action</i>"]
+    P2["<b>02 · Plan-Then-Execute</b><br/>🧊 plan frozen before<br/>untrusted data is read<br/><i>cannot rewrite the plan</i>"]
+    P3["<b>03 · LLM Map-Reduce</b><br/>🧩 one isolated worker per item,<br/>typed reduce<br/><i>blast radius of one</i>"]
+    P4["<b>04 · Dual LLM</b><br/>🚧 privileged model never<br/>sees untrusted text<br/><i>never enters the context</i>"]
+    P5["<b>05 · Code-Then-Execute</b><br/>📜 program vetted by an<br/>AST allowlist + sandbox<br/><i>cannot run un-allowed code</i>"]
+    P6["<b>06 · Context-Minimization</b><br/>🧹 untrusted content pruned<br/>from history after use<br/><i>injection lives one turn</i>"]
+
+    classDef attack fill:#fee2e2,stroke:#dc2626,color:#450a0a;
+    classDef pat fill:#f0fdf4,stroke:#16a34a,color:#052e16;
+    class X attack
+    class P1,P2,P3,P4,P5,P6 pat
+```
+
+And, quickly, which one to reach for:
+
+```mermaid
+flowchart TD
+    S{"Can you enumerate<br/>every allowed action?"} -->|yes| A["01 Action-Selector"]
+    S -->|no| M{"Many untrusted items<br/>of one shape?"}
+    M -->|yes| B["03 LLM Map-Reduce"]
+    M -->|no| C{"Is the task<br/>computational?"}
+    C -->|yes| D["05 Code-Then-Execute"]
+    C -->|no| E{"Does the agent hold<br/>consequential tools?"}
+    E -->|yes| F["04 Dual LLM<br/>+ 02 Plan-Then-Execute"]
+    E -->|no| G["06 Context-Minimization"]
+    classDef q fill:#fef9c3,stroke:#ca8a04,color:#422006;
+    classDef ans fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
+    class S,M,C,E q
+    class A,B,D,F,G ans
+```
+
 ## How the blueprint is laid out
 
-```
-blueprint/
-├── llm/          models.py (LLMModel enum) · provider.py (factory + injectable mock)
-├── agents/       base_agent.py · models.py (AgentType + typed channels)
-├── security/     ngram leak · input classifier · output filter · sandbox
-│                 symbolic_memory · verdict   ← the cross-cutting defence layer
-├── graph/        state.py (trust-labelled state) · builder.py
-├── patterns/     one compiled LangGraph per pattern
-├── attacks/      payloads.py (six indirect injections)
-└── benchmark.py  runs every pattern × every payload, secure and insecure
+```mermaid
+flowchart TB
+    subgraph BP["🏗️ blueprint/ — production LangGraph code"]
+        direction TB
+        LLM["🧠 <b>llm/</b><br/>LLMModel enum · provider factory<br/>+ injectable mock model"]
+        AG["🎭 <b>agents/</b><br/>BaseAgent · AgentType roles<br/>typed channels"]
+        SEC["🛡️ <b>security/</b><br/>ngram leak · classifier · output filter<br/>sandbox · symbolic memory · verdict"]
+        GR["🔗 <b>graph/</b><br/>state.py = trust model<br/>builder.py"]
+        PAT["📐 <b>patterns/</b><br/>6 compiled LangGraphs<br/>build_secure() / build_insecure()"]
+        ATK["💣 <b>attacks/</b><br/>6 indirect payloads"]
+    end
+    LEARN["📓 <b>learning/</b><br/>6 runnable notebooks"]
+    TESTS["✅ <b>tests/</b><br/>40 attack/defence tests"]
+    BENCH["📊 <b>benchmark.py</b><br/>every pattern × every payload"]
+
+    LLM --> AG --> PAT
+    SEC --> PAT
+    GR --> PAT
+    ATK --> PAT
+    PAT --> BENCH
+    PAT --> LEARN
+    PAT --> TESTS
+    ATK --> TESTS
+
+    classDef layer fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
+    classDef sec fill:#ede9fe,stroke:#7c3aed,color:#2e1065;
+    classDef out fill:#f0fdf4,stroke:#16a34a,color:#052e16;
+    class LLM,AG,GR,PAT,ATK layer
+    class SEC sec
+    class LEARN,TESTS,BENCH out
 ```
 
 The trust model lives in [`blueprint/graph/state.py`](blueprint/graph/state.py):
