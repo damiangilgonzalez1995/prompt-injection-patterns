@@ -179,9 +179,7 @@ any difference is architecture, not prompting.
 
 {spec['idea']}
 
-```mermaid
-{spec['mermaid']}
-```
+![{spec['title']} — hand-drawn overview](../docs/diagrams/patterns/{spec['num']}.png)
 """))
 
     cells.append(md("""
