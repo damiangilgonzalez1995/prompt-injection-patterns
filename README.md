@@ -84,15 +84,15 @@ architecture, not a friendlier model.
 
 ### The six patterns
 
-<a href="learning/01_action_selector.ipynb"><img src="docs/diagrams/patterns/01.png" alt="Action-Selector" width="100%"></a>
-
-<a href="learning/02_plan_then_execute.ipynb"><img src="docs/diagrams/patterns/02.png" alt="Plan-Then-Execute" width="100%"></a>
-
-<a href="learning/03_llm_map_reduce.ipynb"><img src="docs/diagrams/patterns/03.png" alt="LLM Map-Reduce" width="100%"></a>
-
-<a href="learning/04_dual_llm.ipynb"><img src="docs/diagrams/patterns/04.png" alt="Dual LLM" width="100%"></a>
-
 <table>
+<tr>
+<td width="50%"><a href="learning/01_action_selector.ipynb"><img src="docs/diagrams/patterns/01.png" alt="Action-Selector" width="100%"></a></td>
+<td width="50%"><a href="learning/02_plan_then_execute.ipynb"><img src="docs/diagrams/patterns/02.png" alt="Plan-Then-Execute" width="100%"></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="learning/03_llm_map_reduce.ipynb"><img src="docs/diagrams/patterns/03.png" alt="LLM Map-Reduce" width="100%"></a></td>
+<td width="50%"><a href="learning/04_dual_llm.ipynb"><img src="docs/diagrams/patterns/04.png" alt="Dual LLM" width="100%"></a></td>
+</tr>
 <tr>
 <td width="50%"><a href="learning/05_code_then_execute.ipynb"><img src="docs/diagrams/patterns/05.png" alt="Code-Then-Execute" width="100%"></a></td>
 <td width="50%"><a href="learning/06_context_minimization.ipynb"><img src="docs/diagrams/patterns/06.png" alt="Context-Minimization" width="100%"></a></td>
