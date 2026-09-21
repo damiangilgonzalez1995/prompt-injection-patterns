@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# rsc local state (hooks, seals, logs) and managed skill links — machine-local
+.rsc/
+.claude/skills/bro
+.claude/skills/eli5
+.claude/skills/harness
+.claude/skills/init
+.claude/skills/orient
+.claude/skills/python
+.claude/skills/show-me
+.claude/skills/suggest
+.claude/skills/unslop
+.claude/skills/.rsc-state.json
+.claude/commands/checkpoint.md
+.claude/commands/learn.md
+.claude/commands/resume-session.md
+.claude/commands/save-session.md
